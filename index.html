@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" href="https://i.ibb.co/gdRqkt2/Jaystechub-Logo.png" type="image/x-icon">
+
     <title>Universal AI Particle Engine</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -93,45 +95,219 @@ function initThree() {
 /**
  * 3. SHAPE LIBRARY (The Templates)
  */
-const Generators = {
-    stars: () => {
+/**
+ * 3. SHAPE LIBRARY (The Templates)
+ */
+const ShapeLibrary = {
+    // helpers
+    _randomPoint: () => (Math.random()-0.5)*10,
+    
+    // --- BASIC ---
+    cube: () => {
         const p = [];
-        for(let i=0; i<COUNT; i++) p.push((Math.random()-0.5)*10, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
+        for(let i=0; i<COUNT; i++) {
+            p.push((Math.random()-0.5)*6, (Math.random()-0.5)*6, (Math.random()-0.5)*6);
+        }
+        return p;
+    },
+    sphere: () => {
+        const p = [];
+        for(let i=0; i<COUNT; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const r = 3 + (Math.random()-0.5)*0.2;
+            p.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+        }
         return p;
     },
     tetrahedron: () => {
         const p = [];
-        const size = 2;
+        const size = 3;
         const vertices = [[1,1,1], [-1,-1,1], [-1,1,-1], [1,-1,-1]];
         for(let i=0; i<COUNT; i++) {
             const v = vertices[i % 4];
-            p.push(v[0] * size + (Math.random()-0.5), v[1] * size + (Math.random()-0.5), v[2] * size + (Math.random()-0.5));
+            const spread = Math.random();
+            p.push(
+                v[0] * size * spread + (Math.random()-0.5), 
+                v[1] * size * spread + (Math.random()-0.5), 
+                v[2] * size * spread + (Math.random()-0.5)
+            );
         }
         return p;
     },
+
+    // --- ASTRONOMY ---
+    galaxy: () => {
+        const p = [];
+        for(let i=0; i<COUNT; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 1 + Math.random() * 4;
+            const spirality = 2; 
+            const x = Math.cos(angle * spirality + radius) * radius;
+            const y = Math.sin(angle * spirality + radius) * radius;
+            const z = (Math.random()-0.5) * (5/radius); // thinner at edges
+            p.push(x, y, z);
+        }
+        return p;
+    },
+    saturn: () => {
+        const p = [];
+        for(let i=0; i<COUNT; i++) {
+            if (i < COUNT * 0.3) {
+                // Planet
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+                const r = 1.5;
+                p.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+            } else {
+                // Rings
+                const angle = Math.random() * Math.PI * 2;
+                const r = 2.5 + Math.random() * 2;
+                p.push(Math.cos(angle) * r, (Math.random()-0.5)*0.1, Math.sin(angle) * r);
+            }
+        }
+        return p;
+    },
+
+    // --- NATURE / ORGANIC ---
     flower: () => {
         const p = [];
         for(let i=0; i<COUNT; i++) {
-            const t = (i / COUNT) * Math.PI * 20;
-            const r = 2 * Math.sin(2.5 * t);
-            p.push(r * Math.cos(t), r * Math.sin(t), (Math.random()-0.5)*0.2);
+            const t = (i / COUNT) * Math.PI * 30; // 30 petals approx
+            const r = Math.sin(2.5 * t) * 3;
+            // Add some depth
+            const z = Math.sin(t*5) * 1;
+            p.push(r * Math.cos(t), r * Math.sin(t), z);
+        }
+        return p;
+    },
+    heart: () => {
+        const p = [];
+        for(let i=0; i<COUNT; i++) {
+            const t = Math.random() * Math.PI * 2;
+            // Heart formula
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+            const z = (Math.random()-0.5) * 4; // Thickness
+            const s = 0.15; // scale
+            p.push(x*s, y*s, z);
+        }
+        return p;
+    },
+
+    // --- MATH / ATTRACTORS ---
+    mobius: () => {
+        const p = [];
+        for(let i=0; i<COUNT; i++) {
+            const u = Math.random() * Math.PI * 2;
+            const v = (Math.random() * 2) - 1;
+            const x = (1 + v/2 * Math.cos(u/2)) * Math.cos(u);
+            const y = (1 + v/2 * Math.cos(u/2)) * Math.sin(u);
+            const z = v/2 * Math.sin(u/2);
+            const s = 2.5;
+            p.push(x*s, y*s, z*s);
+        }
+        return p;
+    },
+    torus: () => {
+        const p = [];
+        const R = 3, r = 1;
+        for(let i=0; i<COUNT; i++) {
+            const u = Math.random() * Math.PI * 2;
+            const v = Math.random() * Math.PI * 2;
+            p.push(
+                (R + r * Math.cos(v)) * Math.cos(u),
+                (R + r * Math.cos(v)) * Math.sin(u),
+                r * Math.sin(v)
+            );
+        }
+        return p;
+    },
+    
+    // --- PARAMETRIC / SUPERFORMULA VARIATIONS ---
+    // Generates slightly different shapes based on index/seed
+    superformula: (id) => {
+        const p = [];
+        // different parameters for different IDs
+        const m = (id % 10) + 2; 
+        const n1 = 1 + (id % 5)*0.5;
+        const n2 = 1 + (id % 3);
+        const n3 = 1 + (id % 4);
+        
+        for(let i=0; i<COUNT; i++) {
+            const phi = Math.random() * Math.PI * 2;
+            const theta = (Math.random() - 0.5) * Math.PI;
+            
+            // 2D Superformula r(phi)
+            const r1 = Math.pow(Math.pow(Math.abs(Math.cos(m*phi/4)/1), n2) + Math.pow(Math.abs(Math.sin(m*phi/4)/1), n3), -1/n1);
+            const r2 = Math.pow(Math.pow(Math.abs(Math.cos(m*theta/4)/1), n2) + Math.pow(Math.abs(Math.sin(m*theta/4)/1), n3), -1/n1);
+            
+            const r = r1 * r2 * 3;
+            
+            p.push(
+                r * Math.cos(theta) * Math.cos(phi),
+                r * Math.cos(theta) * Math.sin(phi),
+                r * Math.sin(theta)
+            );
         }
         return p;
     }
 };
 
-function morph(shape) {
-    const target = Generators[shape]();
+// Create a flat list of 100+ items by mixing named shapes and generated variations
+const ShapeList = [
+    'sphere','cube','tetrahedron','galaxy','saturn','flower','heart','mobius','torus'
+];
+// Add 90+ variations
+for(let i=0; i<95; i++) {
+    ShapeList.push(`super_${i}`);
+}
+
+let currentShapeIndex = 0;
+
+function morph(shapeKey) {
+    let target;
+    let nameDisplay = "";
+
+    if (ShapeLibrary[shapeKey]) {
+        target = ShapeLibrary[shapeKey]();
+        nameDisplay = shapeKey.toUpperCase();
+    } else if (shapeKey.startsWith('super_')) {
+        const id = parseInt(shapeKey.split('_')[1]);
+        target = ShapeLibrary.superformula(id);
+        nameDisplay = `ALIEN ARTIFACT #${id+1}`;
+    } else {
+        target = ShapeLibrary.sphere();
+        nameDisplay = "UNKNOWN";
+    }
+
     const current = geometry.attributes.position.array;
-    document.getElementById('shape-name').innerText = shape.toUpperCase();
+    const nameEl = document.getElementById('shape-name');
+    
+    // Text animation
+    gsap.to(nameEl, { opacity: 0, duration: 0.2, onComplete: () => {
+        nameEl.innerText = nameDisplay;
+        gsap.to(nameEl, { opacity: 1, duration: 0.2 });
+    }});
+
+    // Color flash effect
+    const color = points.material.color;
+    gsap.to(color, { r: 1, g: 1, b: 1, duration: 0.1, yoyo: true, repeat: 1 });
 
     gsap.to(current, {
-        duration: 1.2,
-        ease: "power2.inOut",
+        duration: 1.5,
+        ease: "elastic.out(1, 0.5)",
         ...target,
         onUpdate: () => { geometry.attributes.position.needsUpdate = true; }
     });
 }
+
+function nextShape() {
+    currentShapeIndex = (currentShapeIndex + 1) % ShapeList.length;
+    morph(ShapeList[currentShapeIndex]);
+    console.log("Morphing to", ShapeList[currentShapeIndex]);
+}
+
 
 /**
  * 4. HAND TRACKING (MEDIAPIPE)
@@ -142,24 +318,75 @@ const hands = new Hands({
 
 hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
 
+let lastPinch = false;
+let colorHue = 0;
+
 hands.onResults((results) => {
+    const status = document.getElementById('status');
+    
     if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
-        document.getElementById('status').innerText = "Hand Active";
+        status.innerText = `Active | ${ShapeList[currentShapeIndex]}`;
+        status.style.background = "rgba(0, 255, 100, 0.3)";
         const hand = results.multiHandLandmarks[0];
         
-        // Dynamic Rotation based on hand position
-        points.rotation.y = (hand[0].x - 0.5) * 4;
-        points.rotation.x = (hand[0].y - 0.5) * 4;
+        // 1. ROTATION: Palm center (approx landmark 9)
+        const cx = hand[9].x;
+        const cy = hand[9].y;
+        
+        // Smooth rotation target
+        gsap.to(points.rotation, {
+            y: (cx - 0.5) * 5,
+            x: (cy - 0.5) * 5,
+            duration: 0.5
+        });
 
-        // Gesture: Detect Pinch
-        const dist = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y);
-        if(dist < 0.04) {
-            morph('tetrahedron');
-        } else if (dist > 0.15) {
-            morph('flower');
+        // 2. DYNAMIC COLOR: Map X position to Hue
+        // Target hue based on hand X
+        const targetHue = cx; // 0.0 to 1.0
+        const targetColor = new THREE.Color().setHSL(targetHue, 1.0, 0.5);
+        gsap.to(points.material.color, {
+            r: targetColor.r,
+            g: targetColor.g,
+            b: targetColor.b,
+            duration: 0.2
+        });
+
+        // 3. SCALE / EXPLOSION: Hand Scale (Distance between wrist & middle finger tip)
+        // Approximate "openness" of hand
+        const wrist = hand[0];
+        const middleTip = hand[12];
+        const handSize = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
+        
+        // Base scale is 1.0. If hand is huge (close/open), scale up.
+        // handSize varies roughly 0.3 (close) to 0.8 (far/open) in normalized coords potentially? 
+        // Actually normalized coords: 0.0 to 1.0.
+        // Let's just map hand openness.
+        const targetScale = 0.5 + (handSize * 3); // Map 0.2->1.1 to ~1->4
+        gsap.to(points.scale, {
+            x: targetScale,
+            y: targetScale,
+            z: targetScale,
+            duration: 0.3
+        });
+
+        // 4. GESTURE: PINCH (Index tip to Thumb tip)
+        const pinchDist = Math.hypot(hand[8].x - hand[4].x, hand[8].y - hand[4].y);
+        const isPinching = pinchDist < 0.05;
+
+        if (isPinching && !lastPinch) {
+            // Trigger on fresh pinch
+            nextShape();
+            lastPinch = true; // debouncer
+        } else if (!isPinching) {
+            lastPinch = false;
         }
+
     } else {
-        document.getElementById('status').innerText = "Looking for Hand...";
+        status.innerText = "Waiting for Hand...";
+        status.style.background = "rgba(255, 255, 255, 0.2)";
+        // Auto rotate if no hand
+        points.rotation.y += 0.005;
+        points.rotation.z += 0.002;
     }
 });
 
@@ -194,4 +421,3 @@ window.addEventListener('resize', () => {
 </script>
 </body>
 </html>
-
